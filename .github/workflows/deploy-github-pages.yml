@@ -30,12 +30,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Configure Supabase
-        if: ${{ secrets.SUPABASE_URL != '' && secrets.SUPABASE_ANON_KEY != '' }}
-        run: |
-          sed -i "s|supabaseUrl: 'https://lmyhkrobunhqtbpfvemr.supabase.co'|supabaseUrl: '${{ secrets.SUPABASE_URL }}'|" src/environments/environment.prod.ts
-          sed -i "s|supabaseAnonKey:.*|supabaseAnonKey: '${{ secrets.SUPABASE_ANON_KEY }}',|" src/environments/environment.prod.ts
-
       - name: Build for GitHub Pages
         run: npm run build:gh-pages
 
