@@ -54,6 +54,15 @@ La PC y el celular tienen que estar en la misma red Wi‑Fi.
 
 Se usan feriados nacionales según la Ley 27.399. Para 2025–2027 se usan fechas oficiales publicadas; para otros años se calculan con las reglas de traslado y Pascua.
 
+## Supabase (calculate_salary)
+
+1. En el proyecto **calculate_salary**, ejecutá el SQL de `supabase/migrations/20250616133000_initial.sql` (SQL Editor).
+2. Copiá `src/environments/environment.example.ts` → `environment.ts` y `environment.prod.ts`.
+3. Pegá **Project URL** y **anon key** desde Supabase → Settings → API.
+4. Para GitHub Pages, agregá secrets en el repo: `SUPABASE_URL` y `SUPABASE_ANON_KEY`.
+
+La app guarda configuración, días seleccionados y horas por período. Si Supabase no está configurado, sigue usando localStorage.
+
 ## Build
 
 ```bash

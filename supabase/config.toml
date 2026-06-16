@@ -1,0 +1,7 @@
+# Supabase local / extension config
+# Enlazá con: Supabase extension → Link project → calculate_salary
+
+project_id = "calculate_salary"
+
+[api]
+enabled = true

@@ -30,6 +30,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Configure Supabase
+        run: |
+          sed -i "s|supabaseUrl: ''|supabaseUrl: '${{ secrets.SUPABASE_URL }}'|" src/environments/environment.prod.ts
+          sed -i "s|supabaseAnonKey: ''|supabaseAnonKey: '${{ secrets.SUPABASE_ANON_KEY }}'|" src/environments/environment.prod.ts
+
       - name: Build for GitHub Pages
         run: npm run build:gh-pages
 
