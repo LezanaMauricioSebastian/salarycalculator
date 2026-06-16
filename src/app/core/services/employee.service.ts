@@ -70,6 +70,8 @@ export class EmployeeService {
       const remote = await this.insertEmployeeRemote(employee);
       if (remote) {
         employee.id = remote.id;
+      } else if (this.clientIdService.isSharedWorkspace()) {
+        throw new Error('No se pudo guardar el empleado en el servidor.');
       }
     }
 

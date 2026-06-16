@@ -35,7 +35,9 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
     <mat-toolbar color="primary">
       <span>Calculadora de sueldo</span>
       @if (settingsService.syncEnabled()) {
-        <span class="sync-badge">Sincronizado</span>
+        <span class="sync-badge sync-on">Sincronizado</span>
+      } @else {
+        <span class="sync-badge sync-off">Solo este dispositivo</span>
       }
     </mat-toolbar>
 
@@ -104,6 +106,10 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
       margin-left: auto;
       font-size: 0.75rem;
       opacity: 0.9;
+    }
+
+    .sync-badge.sync-off {
+      color: #ffecb3;
     }
 
     @media (max-width: 600px) {

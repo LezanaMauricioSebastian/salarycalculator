@@ -15,7 +15,10 @@ describe('SalaryStorageService', () => {
         SalaryStorageService,
         {
           provide: ClientIdService,
-          useValue: { getClientId: () => 'test-client-id' },
+          useValue: {
+            getClientId: () => 'test-client-id',
+            isSharedWorkspace: () => false,
+          },
         },
       ],
     });

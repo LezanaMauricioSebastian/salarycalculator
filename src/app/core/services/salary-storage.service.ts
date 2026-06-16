@@ -38,7 +38,8 @@ export class SalaryStorageService {
   }
 
   async loadSettings(employeeId: string): Promise<AppSettings> {
-    const localSettings = this.loadLocalSettings(employeeId);
+    const remoteOnly = this.useRemoteOnly();
+    const localSettings = remoteOnly ? { ...DEFAULT_SETTINGS } : this.loadLocalSettings(employeeId);
 
     if (!isSupabaseConfigured()) {
       return localSettings;
@@ -57,7 +58,9 @@ export class SalaryStorageService {
         .maybeSingle();
 
       if (error || !data) {
-        await this.saveSettings(employeeId, localSettings);
+        if (!remoteOnly) {
+          await this.saveSettings(employeeId, localSettings);
+        }
         return localSettings;
       }
 
@@ -100,7 +103,8 @@ export class SalaryStorageService {
   }
 
   async loadLastPeriod(employeeId: string): Promise<PaymentPeriod | null> {
-    const local = this.loadLocalLastPeriod(employeeId);
+    const remoteOnly = this.useRemoteOnly();
+    const local = remoteOnly ? null : this.loadLocalLastPeriod(employeeId);
 
     if (!isSupabaseConfigured()) {
       return local;
@@ -140,7 +144,8 @@ export class SalaryStorageService {
     periodType: PaymentPeriodType,
     defaultHoursPerDay: number,
   ): Promise<StoredPeriodState | null> {
-    const local = this.loadLocalPeriodState(employeeId, period, periodType);
+    const remoteOnly = this.useRemoteOnly();
+    const local = remoteOnly ? null : this.loadLocalPeriodState(employeeId, period, periodType);
 
     if (!isSupabaseConfigured()) {
       return local;
@@ -163,7 +168,7 @@ export class SalaryStorageService {
         .maybeSingle();
 
       if (periodError || !periodRow) {
-        return local;
+        return remoteOnly ? null : local;
       }
 
       const { data: entries, error: entriesError } = await supabase
@@ -172,7 +177,7 @@ export class SalaryStorageService {
         .eq('period_id', periodRow.id);
 
       if (entriesError || !entries) {
-        return local;
+        return remoteOnly ? null : local;
       }
 
       const remote = this.mapPeriodEntries(entries, defaultHoursPerDay);
@@ -253,6 +258,10 @@ export class SalaryStorageService {
     } catch {
       // ignore
     }
+  }
+
+  private useRemoteOnly(): boolean {
+    return isSupabaseConfigured() && this.clientIdService.isSharedWorkspace();
   }
 
   migrateLegacySettings(employeeId: string): AppSettings | null {
