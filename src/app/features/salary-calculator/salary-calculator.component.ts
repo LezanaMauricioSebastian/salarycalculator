@@ -39,6 +39,9 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
       } @else {
         <span class="sync-badge sync-off">Solo este dispositivo</span>
       }
+      @if (employeeService.lastSyncError()) {
+        <span class="sync-badge sync-error" [title]="employeeService.lastSyncError() ?? ''">Error sync</span>
+      }
     </mat-toolbar>
 
     @if (!settingsService.ready() || !employeeService.ready()) {
@@ -110,6 +113,11 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
 
     .sync-badge.sync-off {
       color: #ffecb3;
+    }
+
+    .sync-badge.sync-error {
+      color: #ffcdd2;
+      margin-left: 0.5rem;
     }
 
     @media (max-width: 600px) {
