@@ -24,7 +24,7 @@ export class EmployeeService {
   async initialize(): Promise<void> {
     let loaded = await this.loadEmployeesRemote();
 
-    if (loaded.length === 0) {
+    if (loaded.length === 0 && !this.clientIdService.isSharedWorkspace()) {
       loaded = this.loadEmployeesLocal();
     }
 
@@ -35,7 +35,9 @@ export class EmployeeService {
 
     this.employees.set(loaded.sort((a, b) => a.sortOrder - b.sortOrder));
 
-    const activeId = (await this.loadActiveEmployeeIdRemote()) ?? this.loadActiveEmployeeIdLocal();
+    const activeId =
+      (await this.loadActiveEmployeeIdRemote()) ??
+      (this.clientIdService.isSharedWorkspace() ? null : this.loadActiveEmployeeIdLocal());
     const active =
       loaded.find((employee) => employee.id === activeId && employee.active) ??
       loaded.find((employee) => employee.active) ??
