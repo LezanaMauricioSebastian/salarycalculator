@@ -15,6 +15,11 @@ function isWeekdayDate(date: Date): boolean {
   return day >= 1 && day <= 5;
 }
 
+function isWeekendDate(date: Date): boolean {
+  const day = getDay(date);
+  return day === 0 || day === 6;
+}
+
 @Injectable({ providedIn: 'root' })
 export class WorkDayService {
   buildMonth(year: number, month: number, defaultHoursPerDay: number): WorkDay[] {
@@ -53,6 +58,7 @@ export class WorkDayService {
         selected: isWeekdayDate(date),
         hours: defaultHoursPerDay,
         isHoliday: Boolean(holidayName),
+        isWeekend: isWeekendDate(date),
         holidayName,
       });
     }
@@ -66,6 +72,7 @@ export class WorkDayService {
       selected: false,
       hours: defaultHoursPerDay,
       isHoliday: false,
+      isWeekend: false,
     };
   }
 }

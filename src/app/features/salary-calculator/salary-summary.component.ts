@@ -22,12 +22,20 @@ import { SalaryBreakdown } from '../../core/models/work-day.model';
           <strong>{{ breakdown().holidayDays }}</strong>
         </div>
         <div class="summary-item">
+          <span class="label">Días fin de semana</span>
+          <strong>{{ breakdown().weekendDays }}</strong>
+        </div>
+        <div class="summary-item">
           <span class="label">Horas normales</span>
           <strong>{{ breakdown().regularHours | number: '1.0-1' }}</strong>
         </div>
         <div class="summary-item">
           <span class="label">Horas feriado</span>
           <strong>{{ breakdown().holidayHours | number: '1.0-1' }}</strong>
+        </div>
+        <div class="summary-item">
+          <span class="label">Horas fin de semana</span>
+          <strong>{{ breakdown().weekendHours | number: '1.0-1' }}</strong>
         </div>
         <div class="summary-item">
           <span class="label">Total horas</span>
@@ -40,6 +48,10 @@ import { SalaryBreakdown } from '../../core/models/work-day.model';
         <div class="summary-item">
           <span class="label">Sueldo feriados</span>
           <strong>{{ breakdown().holidayPay | currency: 'ARS' : 'symbol-narrow' : '1.0-0' : 'es-AR' }}</strong>
+        </div>
+        <div class="summary-item">
+          <span class="label">Sueldo fin de semana</span>
+          <strong>{{ breakdown().weekendPay | currency: 'ARS' : 'symbol-narrow' : '1.0-0' : 'es-AR' }}</strong>
         </div>
         <div class="summary-item total">
           <span class="label">Total a cobrar</span>

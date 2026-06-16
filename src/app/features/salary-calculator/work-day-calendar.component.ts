@@ -50,11 +50,14 @@ import { WorkDay } from '../../core/models/work-day.model';
                 class="day-cell"
                 [class.selected]="day.selected"
                 [class.holiday]="day.isHoliday"
+                [class.weekend]="day.isWeekend && !day.isHoliday"
                 (click)="toggleDay.emit(day.date)"
               >
                 <span class="day-number">{{ dayNumber(day.date) }}</span>
                 @if (day.isHoliday) {
                   <span class="holiday-badge">F</span>
+                } @else if (day.isWeekend) {
+                  <span class="weekend-badge">S/D</span>
                 }
                 @if (day.selected) {
                   <span class="hours-label">{{ day.hours }}h</span>
@@ -192,6 +195,15 @@ import { WorkDay } from '../../core/models/work-day.model';
       border-color: #ef6c00;
     }
 
+    .day-cell.weekend {
+      background: #f3e5f5;
+    }
+
+    .day-cell.selected.weekend {
+      background: #e1bee7;
+      border-color: #7b1fa2;
+    }
+
     .day-number {
       font-size: 1rem;
       font-weight: 600;
@@ -201,6 +213,13 @@ import { WorkDay } from '../../core/models/work-day.model';
       font-size: 0.7rem;
       font-weight: 700;
       color: #e65100;
+      line-height: 1;
+    }
+
+    .weekend-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: #6a1b9a;
       line-height: 1;
     }
 
@@ -348,6 +367,7 @@ export class WorkDayCalendarComponent {
   readonly calendarTitle = input('Calendario del período');
   readonly defaultHoursPerDay = input(8);
   readonly holidayHourlyRate = input(4800);
+  readonly weekendHourlyRate = input(4800);
   readonly toggleDay = output<string>();
   readonly hoursChange = output<{ date: string; hours: number }>();
   readonly selectWeekdays = output<void>();

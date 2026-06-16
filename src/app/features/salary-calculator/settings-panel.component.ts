@@ -51,7 +51,20 @@ import { SettingsService } from '../../core/services/settings.service';
             [ngModel]="settingsService.settings().holidayHourlyRate"
             (ngModelChange)="updateSetting('holidayHourlyRate', $event)"
           />
-          <mat-hint>Se guarda automáticamente</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Tarifa por hora fin de semana ($)</mat-label>
+          <input
+            matInput
+            type="number"
+            min="1"
+            step="100"
+            inputmode="numeric"
+            [ngModel]="settingsService.settings().weekendHourlyRate"
+            (ngModelChange)="updateSetting('weekendHourlyRate', $event)"
+          />
+          <mat-hint>Sábado y domingo (si no es feriado)</mat-hint>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -94,7 +107,10 @@ export class SettingsPanelComponent {
   readonly settingsService = inject(SettingsService);
   readonly paymentPeriodTypeChange = output<PaymentPeriodType>();
 
-  updateSetting(key: 'hourlyRate' | 'defaultHoursPerDay' | 'holidayHourlyRate', value: number): void {
+  updateSetting(
+    key: 'hourlyRate' | 'defaultHoursPerDay' | 'holidayHourlyRate' | 'weekendHourlyRate',
+    value: number,
+  ): void {
     const parsed = Number(value);
     if (!Number.isFinite(parsed) || parsed <= 0) {
       return;

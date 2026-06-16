@@ -8,10 +8,13 @@ import {
   PaymentPeriodType,
 } from '../../core/models/payment-period.model';
 import { WorkDay } from '../../core/models/work-day.model';
+import { EmployeeSwitchEvent } from '../../core/models/employee-switch.model';
+import { EmployeeService } from '../../core/services/employee.service';
 import { SalaryService } from '../../core/services/salary.service';
 import { SalaryStorageService } from '../../core/services/salary-storage.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { WorkDayService } from '../../core/services/work-day.service';
+import { EmployeeManagerComponent } from './employee-manager.component';
 import { MonthSelectorComponent } from './month-selector.component';
 import { SalarySummaryComponent } from './salary-summary.component';
 import { SettingsPanelComponent } from './settings-panel.component';
@@ -22,6 +25,7 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
   imports: [
     MatToolbarModule,
     MatProgressSpinnerModule,
+    EmployeeManagerComponent,
     SettingsPanelComponent,
     MonthSelectorComponent,
     WorkDayCalendarComponent,
@@ -35,7 +39,7 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
       }
     </mat-toolbar>
 
-    @if (!settingsService.ready()) {
+    @if (!settingsService.ready() || !employeeService.ready()) {
       <div class="loading-state">
         <mat-spinner diameter="40" />
         <p>Cargando datos...</p>
@@ -43,8 +47,11 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
     } @else {
       <main class="page-content">
         <p class="intro">
-          Marcá los días que trabajaste en el período. Los feriados nacionales de Argentina se detectan solos.
+          Seleccioná un empleado y marcá sus días trabajados en el período. Los feriados nacionales de
+          Argentina se detectan solos.
         </p>
+
+        <app-employee-manager (employeeSwitch)="onEmployeeSwitch($event)" />
 
         <app-settings-panel (paymentPeriodTypeChange)="onPaymentPeriodTypeChange()" />
 
@@ -58,6 +65,7 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
           [calendarTitle]="calendarTitle()"
           [defaultHoursPerDay]="settingsService.settings().defaultHoursPerDay"
           [holidayHourlyRate]="settingsService.settings().holidayHourlyRate"
+          [weekendHourlyRate]="settingsService.settings().weekendHourlyRate"
           [workDays]="workDays()"
           (toggleDay)="toggleDay($event)"
           (hoursChange)="updateHours($event.date, $event.hours)"
@@ -111,6 +119,7 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
 })
 export class SalaryCalculatorComponent implements OnInit {
   readonly settingsService = inject(SettingsService);
+  readonly employeeService = inject(EmployeeService);
   private readonly storageService = inject(SalaryStorageService);
   private readonly workDayService = inject(WorkDayService);
   private readonly salaryService = inject(SalaryService);
@@ -154,6 +163,23 @@ export class SalaryCalculatorComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     const initialPeriod = await this.settingsService.getInitialPeriod();
     this.period.set(initialPeriod);
+    await this.loadPeriod(initialPeriod);
+  }
+
+  async onEmployeeSwitch(event: EmployeeSwitchEvent): Promise<void> {
+    await this.persistForEmployee(event.fromId);
+
+    if (event.action === 'archive') {
+      await this.employeeService.archiveEmployee(event.fromId);
+    }
+
+    await this.employeeService.setActiveEmployee(event.toId);
+    await this.settingsService.reloadForActiveEmployee();
+
+    const initialPeriod = await this.settingsService.getInitialPeriod();
+    this.period.set(initialPeriod);
+    this.customHoursByDate.set({});
+    this.workDays.set([]);
     await this.loadPeriod(initialPeriod);
   }
 
@@ -210,9 +236,16 @@ export class SalaryCalculatorComponent implements OnInit {
   }
 
   private async loadPeriod(period: PaymentPeriod): Promise<void> {
+    const employee = this.employeeService.activeEmployee();
+    if (!employee) {
+      this.workDays.set([]);
+      return;
+    }
+
     const settings = this.settingsService.settings();
     const builtDays = this.buildWorkDays(period, settings);
     const stored = await this.storageService.loadPeriodState(
+      employee.id,
       period,
       settings.paymentPeriodType,
       settings.defaultHoursPerDay,
@@ -257,8 +290,28 @@ export class SalaryCalculatorComponent implements OnInit {
   }
 
   private persistNow(): Promise<void> {
+    const employee = this.employeeService.activeEmployee();
+    if (!employee) {
+      return Promise.resolve();
+    }
+
+    return this.persistForEmployee(employee.id);
+  }
+
+  private async persistForEmployee(employeeId: string): Promise<void> {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+
     const settings = this.settingsService.settings();
-    return this.storageService.savePeriodState(this.period(), settings.paymentPeriodType, this.workDays());
+    await this.storageService.savePeriodState(
+      employeeId,
+      this.period(),
+      settings.paymentPeriodType,
+      this.workDays(),
+      settings.defaultHoursPerDay,
+    );
   }
 
   private buildWorkDays(
