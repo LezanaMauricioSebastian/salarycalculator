@@ -1,0 +1,62 @@
+export interface ArgentinaHoliday {
+  date: string;
+  name: string;
+}
+
+/** Official observed dates from argentina.gob.ar (includes traslados). */
+export const HOLIDAY_OVERRIDES: Record<number, ArgentinaHoliday[]> = {
+  2025: [
+    { date: '2025-01-01', name: 'Año Nuevo' },
+    { date: '2025-03-03', name: 'Lunes de Carnaval' },
+    { date: '2025-03-04', name: 'Martes de Carnaval' },
+    { date: '2025-03-24', name: 'Día Nacional de la Memoria por la Verdad y la Justicia' },
+    { date: '2025-04-02', name: 'Día del Veterano y de los Caídos en la Guerra de Malvinas' },
+    { date: '2025-04-18', name: 'Viernes Santo' },
+    { date: '2025-05-01', name: 'Día del Trabajador' },
+    { date: '2025-05-25', name: 'Día de la Revolución de Mayo' },
+    { date: '2025-06-16', name: 'Paso a la Inmortalidad del General Don Martín Miguel de Güemes' },
+    { date: '2025-06-20', name: 'Paso a la Inmortalidad del General Don Manuel Belgrano' },
+    { date: '2025-07-09', name: 'Día de la Independencia' },
+    { date: '2025-08-15', name: 'Paso a la Inmortalidad del General Don José de San Martín' },
+    { date: '2025-10-10', name: 'Día del Respeto a la Diversidad Cultural' },
+    { date: '2025-11-24', name: 'Día de la Soberanía Nacional' },
+    { date: '2025-12-08', name: 'Día de la Inmaculada Concepción de María' },
+    { date: '2025-12-25', name: 'Navidad' },
+  ],
+  2026: [
+    { date: '2026-01-01', name: 'Año Nuevo' },
+    { date: '2026-02-16', name: 'Lunes de Carnaval' },
+    { date: '2026-02-17', name: 'Martes de Carnaval' },
+    { date: '2026-03-24', name: 'Día Nacional de la Memoria por la Verdad y la Justicia' },
+    { date: '2026-04-02', name: 'Día del Veterano y de los Caídos en la Guerra de Malvinas' },
+    { date: '2026-04-03', name: 'Viernes Santo' },
+    { date: '2026-05-01', name: 'Día del Trabajador' },
+    { date: '2026-05-25', name: 'Día de la Revolución de Mayo' },
+    { date: '2026-06-15', name: 'Paso a la Inmortalidad del General Don Martín Miguel de Güemes' },
+    { date: '2026-06-20', name: 'Paso a la Inmortalidad del General Don Manuel Belgrano' },
+    { date: '2026-07-09', name: 'Día de la Independencia' },
+    { date: '2026-08-17', name: 'Paso a la Inmortalidad del General Don José de San Martín' },
+    { date: '2026-10-12', name: 'Día del Respeto a la Diversidad Cultural' },
+    { date: '2026-11-23', name: 'Día de la Soberanía Nacional' },
+    { date: '2026-12-08', name: 'Día de la Inmaculada Concepción de María' },
+    { date: '2026-12-25', name: 'Navidad' },
+  ],
+  2027: [
+    { date: '2027-01-01', name: 'Año Nuevo' },
+    { date: '2027-02-08', name: 'Lunes de Carnaval' },
+    { date: '2027-02-09', name: 'Martes de Carnaval' },
+    { date: '2027-03-24', name: 'Día Nacional de la Memoria por la Verdad y la Justicia' },
+    { date: '2027-03-26', name: 'Viernes Santo' },
+    { date: '2027-04-02', name: 'Día del Veterano y de los Caídos en la Guerra de Malvinas' },
+    { date: '2027-05-01', name: 'Día del Trabajador' },
+    { date: '2027-05-25', name: 'Día de la Revolución de Mayo' },
+    { date: '2027-06-17', name: 'Paso a la Inmortalidad del General Don Martín Miguel de Güemes' },
+    { date: '2027-06-20', name: 'Paso a la Inmortalidad del General Don Manuel Belgrano' },
+    { date: '2027-07-09', name: 'Día de la Independencia' },
+    { date: '2027-08-16', name: 'Paso a la Inmortalidad del General Don José de San Martín' },
+    { date: '2027-10-11', name: 'Día del Respeto a la Diversidad Cultural' },
+    { date: '2027-11-22', name: 'Día de la Soberanía Nacional' },
+    { date: '2027-12-08', name: 'Día de la Inmaculada Concepción de María' },
+    { date: '2027-12-25', name: 'Navidad' },
+  ],
+};

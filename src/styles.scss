@@ -1,0 +1,31 @@
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  background: #f5f7fa;
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button.day-cell {
+  font: inherit;
+  color: inherit;
+}
+
+.mat-toolbar-row,
+.mat-toolbar-single-row {
+  min-height: 56px;
+}
+
+@media (max-width: 600px) {
+  .mat-mdc-form-field {
+    width: 100%;
+  }
+}
