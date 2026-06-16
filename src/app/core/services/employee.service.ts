@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { DEFAULT_SETTINGS } from '../models/app-settings.model';
 import { DEFAULT_EMPLOYEE_NAME, Employee } from '../models/employee.model';
 import { getSupabaseClient, isSupabaseConfigured } from '../supabase/supabase.client';
 import { ClientIdService } from './client-id.service';
@@ -24,8 +25,11 @@ export class EmployeeService {
   async initialize(): Promise<void> {
     let loaded = await this.loadEmployeesRemote();
 
-    if (loaded.length === 0 && !this.clientIdService.isSharedWorkspace()) {
-      loaded = this.loadEmployeesLocal();
+    if (loaded.length === 0) {
+      const local = this.loadEmployeesLocal();
+      if (local.length > 0) {
+        loaded = isSupabaseConfigured() ? await this.syncEmployeesToRemote(local) : local;
+      }
     }
 
     if (loaded.length === 0) {
@@ -34,10 +38,13 @@ export class EmployeeService {
     }
 
     this.employees.set(loaded.sort((a, b) => a.sortOrder - b.sortOrder));
+    this.saveEmployeesLocal(this.employees());
 
     const activeId =
       (await this.loadActiveEmployeeIdRemote()) ??
-      (this.clientIdService.isSharedWorkspace() ? null : this.loadActiveEmployeeIdLocal());
+      this.loadActiveEmployeeIdLocal() ??
+      loaded.find((employee) => employee.active)?.id ??
+      null;
     const active =
       loaded.find((employee) => employee.id === activeId && employee.active) ??
       loaded.find((employee) => employee.active) ??
@@ -58,32 +65,28 @@ export class EmployeeService {
       throw new Error('Employee name is required');
     }
 
-    const sortOrder = this.employees().length;
     const employee: Employee = {
       id: crypto.randomUUID(),
       name: trimmed,
       active: true,
-      sortOrder,
+      sortOrder: this.employees().length,
     };
 
-    if (isSupabaseConfigured()) {
-      const remote = await this.insertEmployeeRemote(employee);
-      if (remote) {
-        employee.id = remote.id;
-      } else if (this.clientIdService.isSharedWorkspace()) {
-        throw new Error('No se pudo guardar el empleado en el servidor.');
-      }
+    const synced = isSupabaseConfigured() ? await this.insertEmployeeRemote(employee) : employee;
+    if (isSupabaseConfigured() && !synced) {
+      throw new Error('No se pudo guardar el empleado en el servidor.');
     }
 
-    this.employees.update((list) => [...list, employee].sort((a, b) => a.sortOrder - b.sortOrder));
+    const saved = synced ?? employee;
+    this.employees.update((list) => [...list, saved].sort((a, b) => a.sortOrder - b.sortOrder));
     this.saveEmployeesLocal(this.employees());
 
     if (!this.activeEmployee()) {
-      this.activeEmployee.set(employee);
-      await this.persistActiveEmployee(employee.id);
+      this.activeEmployee.set(saved);
+      await this.persistActiveEmployee(saved.id);
     }
 
-    return employee;
+    return saved;
   }
 
   async renameEmployee(id: string, name: string): Promise<void> {
@@ -92,17 +95,29 @@ export class EmployeeService {
       return;
     }
 
+    const current = this.employees().find((employee) => employee.id === id);
+    if (!current) {
+      return;
+    }
+
+    const updated: Employee = { ...current, name: trimmed };
+
+    if (isSupabaseConfigured()) {
+      const remote = await this.upsertEmployeeRemote(updated);
+      if (!remote && this.clientIdService.isSharedWorkspace()) {
+        throw new Error('No se pudo actualizar el empleado en el servidor.');
+      }
+    }
+
     this.employees.update((list) =>
-      list.map((employee) => (employee.id === id ? { ...employee, name: trimmed } : employee)),
+      list.map((employee) => (employee.id === id ? updated : employee)),
     );
     this.saveEmployeesLocal(this.employees());
 
     const active = this.activeEmployee();
     if (active?.id === id) {
-      this.activeEmployee.set({ ...active, name: trimmed });
+      this.activeEmployee.set(updated);
     }
-
-    await this.updateEmployeeRemote(id, { name: trimmed });
   }
 
   async archiveEmployee(id: string): Promise<void> {
@@ -111,11 +126,24 @@ export class EmployeeService {
       return;
     }
 
+    const current = this.employees().find((employee) => employee.id === id);
+    if (!current) {
+      return;
+    }
+
+    const archived: Employee = { ...current, active: false };
+
+    if (isSupabaseConfigured()) {
+      const remote = await this.upsertEmployeeRemote(archived);
+      if (!remote && this.clientIdService.isSharedWorkspace()) {
+        throw new Error('No se pudo archivar el empleado en el servidor.');
+      }
+    }
+
     this.employees.update((list) =>
-      list.map((employee) => (employee.id === id ? { ...employee, active: false } : employee)),
+      list.map((employee) => (employee.id === id ? archived : employee)),
     );
     this.saveEmployeesLocal(this.employees());
-    await this.updateEmployeeRemote(id, { active: false });
 
     if (this.activeEmployee()?.id === id) {
       const next = this.activeEmployees()[0] ?? null;
@@ -134,6 +162,23 @@ export class EmployeeService {
     await this.persistActiveEmployee(id);
   }
 
+  private async syncEmployeesToRemote(employees: Employee[]): Promise<Employee[]> {
+    const synced: Employee[] = [];
+
+    for (const employee of employees) {
+      const remote = await this.upsertEmployeeRemote(employee);
+      if (remote) {
+        synced.push(remote);
+      }
+    }
+
+    if (synced.length === 0) {
+      return employees;
+    }
+
+    return synced.sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
   private async persistActiveEmployee(id: string | null): Promise<void> {
     if (id) {
       localStorage.setItem(LOCAL_ACTIVE_EMPLOYEE_KEY, id);
@@ -145,22 +190,22 @@ export class EmployeeService {
       return;
     }
 
-    try {
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        return;
-      }
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return;
+    }
 
-      await supabase.from('salary_settings').upsert(
-        {
-          client_id: this.clientIdService.getClientId(),
-          active_employee_id: id,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'client_id' },
-      );
-    } catch {
-      // localStorage already saved
+    const { error } = await supabase.from('salary_settings').upsert(
+      {
+        client_id: this.clientIdService.getClientId(),
+        active_employee_id: id,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'client_id' },
+    );
+
+    if (error) {
+      console.error('Failed to persist active employee', error.message);
     }
   }
 
@@ -169,85 +214,87 @@ export class EmployeeService {
       return [];
     }
 
-    try {
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        return [];
-      }
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return [];
+    }
 
+    try {
       const { data, error } = await supabase
         .from('employees')
         .select('id, name, active, sort_order')
         .eq('client_id', this.clientIdService.getClientId())
         .order('sort_order', { ascending: true });
 
-      if (error || !data) {
+      if (error) {
+        console.error('Failed to load employees', error.message);
         return [];
       }
 
-      const employees = data.map((row) => this.mapEmployeeRow(row as EmployeeRow));
-      this.saveEmployeesLocal(employees);
-      return employees;
-    } catch {
+      if (!data || data.length === 0) {
+        return [];
+      }
+
+      return data.map((row) => this.mapEmployeeRow(row as EmployeeRow));
+    } catch (error) {
+      console.error('Failed to load employees', error);
       return [];
     }
   }
 
   private async insertEmployeeRemote(employee: Employee): Promise<Employee | null> {
-    try {
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        return null;
-      }
+    return this.upsertEmployeeRemote(employee);
+  }
 
+  private async upsertEmployeeRemote(employee: Employee): Promise<Employee | null> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return null;
+    }
+
+    try {
       const { data, error } = await supabase
         .from('employees')
-        .insert({
-          id: employee.id,
-          client_id: this.clientIdService.getClientId(),
-          name: employee.name,
-          active: employee.active,
-          sort_order: employee.sortOrder,
-          updated_at: new Date().toISOString(),
-        })
+        .upsert(
+          {
+            id: employee.id,
+            client_id: this.clientIdService.getClientId(),
+            name: employee.name,
+            active: employee.active,
+            sort_order: employee.sortOrder,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' },
+        )
         .select('id, name, active, sort_order')
         .single();
 
       if (error || !data) {
+        console.error('Failed to save employee', error?.message);
         return null;
       }
 
-      await supabase.from('employee_settings').insert({ employee_id: data.id });
-      return this.mapEmployeeRow(data as EmployeeRow);
-    } catch {
-      return null;
-    }
-  }
+      const { error: settingsError } = await supabase.from('employee_settings').upsert(
+        {
+          employee_id: data.id,
+          hourly_rate: DEFAULT_SETTINGS.hourlyRate,
+          default_hours_per_day: DEFAULT_SETTINGS.defaultHoursPerDay,
+          holiday_hourly_rate: DEFAULT_SETTINGS.holidayHourlyRate,
+          weekend_hourly_rate: DEFAULT_SETTINGS.weekendHourlyRate,
+          payment_period_type: DEFAULT_SETTINGS.paymentPeriodType,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'employee_id' },
+      );
 
-  private async updateEmployeeRemote(
-    id: string,
-    patch: Partial<Pick<Employee, 'name' | 'active'>>,
-  ): Promise<void> {
-    if (!isSupabaseConfigured()) {
-      return;
-    }
-
-    try {
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        return;
+      if (settingsError) {
+        console.error('Failed to save employee settings', settingsError.message);
       }
 
-      await supabase
-        .from('employees')
-        .update({
-          ...patch,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .eq('client_id', this.clientIdService.getClientId());
-    } catch {
-      // ignore
+      return this.mapEmployeeRow(data as EmployeeRow);
+    } catch (error) {
+      console.error('Failed to save employee', error);
+      return null;
     }
   }
 
@@ -256,12 +303,12 @@ export class EmployeeService {
       return null;
     }
 
-    try {
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        return null;
-      }
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return null;
+    }
 
+    try {
       const { data, error } = await supabase
         .from('salary_settings')
         .select('active_employee_id')
