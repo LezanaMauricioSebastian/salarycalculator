@@ -8,8 +8,8 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  hourlyRate: 5000,
+  hourlyRate: 4000,
   defaultHoursPerDay: 8,
-  holidayHourlyRate: 10000,
+  holidayHourlyRate: 4800,
   paymentPeriodType: 'quincenal',
 };

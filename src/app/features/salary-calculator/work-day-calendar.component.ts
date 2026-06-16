@@ -347,7 +347,7 @@ export class WorkDayCalendarComponent {
   readonly workDays = input.required<WorkDay[]>();
   readonly calendarTitle = input('Calendario del período');
   readonly defaultHoursPerDay = input(8);
-  readonly holidayHourlyRate = input(10000);
+  readonly holidayHourlyRate = input(4800);
   readonly toggleDay = output<string>();
   readonly hoursChange = output<{ date: string; hours: number }>();
   readonly selectWeekdays = output<void>();
