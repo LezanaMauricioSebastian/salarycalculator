@@ -64,23 +64,19 @@ Los archivos quedan en `dist/momsproject`.
 
 ## Publicar en GitHub Pages
 
-El repo debe llamarse **`momsproject`** (o cambiá `baseHref` en `angular.json` → `github-pages` si usás otro nombre).
+El repo debe llamarse **`salarycalculator`** (o cambiá `baseHref` en `angular.json` → `github-pages` si usás otro nombre).
 
-1. Creá un repo en GitHub, por ejemplo `momsproject`.
+1. Creá un repo en GitHub: [github.com/new](https://github.com/new) → nombre **`salarycalculator`** (público, sin README).
 2. En el repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 3. En tu PC:
 
 ```bash
-git init
-git add .
-git commit -m "Calculadora de sueldo para cuidado de adultos mayores"
-git branch -M main
-git remote add origin https://github.com/TU_USUARIO/momsproject.git
+git remote set-url origin https://github.com/LezanaMauricioSebastian/salarycalculator.git
 git push -u origin main
 ```
 
 4. GitHub Actions compila y publica solo. La URL queda:
 
-`https://TU_USUARIO.github.io/momsproject/`
+`https://LezanaMauricioSebastian.github.io/salarycalculator/`
 
 Si el repo se llama `TU_USUARIO.github.io` (página de usuario), cambiá en `angular.json` el `baseHref` de `github-pages` a `"/"`.

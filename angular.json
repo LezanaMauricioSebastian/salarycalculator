@@ -59,7 +59,7 @@
               "sourceMap": true
             },
             "github-pages": {
-              "baseHref": "/momsproject/",
+              "baseHref": "/salarycalculator/",
               "outputHashing": "all",
               "budgets": [
                 {
