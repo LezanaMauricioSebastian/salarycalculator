@@ -271,7 +271,9 @@ export class SalaryCalculatorComponent implements OnInit {
     }
 
     const storedByDate = new Map(stored.workDays.map((day) => [day.date, day]));
-    this.customHoursByDate.set(stored.customHoursByDate);
+    const defaultHours = settings.defaultHoursPerDay;
+    const overrides = stored.customHoursByDate;
+    this.customHoursByDate.set(overrides);
 
     this.workDays.set(
       builtDays.map((day) => {
@@ -287,7 +289,7 @@ export class SalaryCalculatorComponent implements OnInit {
         return {
           ...day,
           selected: saved.selected,
-          hours: saved.hours,
+          hours: overrides[day.date] ?? defaultHours,
         };
       }),
     );

@@ -14,6 +14,7 @@ interface LegacyAppSettings extends Partial<AppSettings> {
 }
 
 export interface StoredPeriodState {
+  defaultHoursPerDay?: number;
   customHoursByDate: Record<string, number>;
   workDays: Array<Pick<WorkDay, 'date' | 'selected' | 'hours'>>;
 }
@@ -143,13 +144,13 @@ export class SalaryStorageService {
     const local = this.loadLocalPeriodState(employeeId, period, periodType);
 
     if (!isSupabaseConfigured()) {
-      return local;
+      return local ? this.normalizeStoredPeriodState(local, defaultHoursPerDay) : null;
     }
 
     try {
       const supabase = getSupabaseClient();
       if (!supabase) {
-        return local;
+        return local ? this.normalizeStoredPeriodState(local, defaultHoursPerDay) : null;
       }
 
       const { data: periodRow, error: periodError } = await supabase
@@ -163,7 +164,7 @@ export class SalaryStorageService {
         .maybeSingle();
 
       if (periodError || !periodRow) {
-        return local;
+        return local ? this.normalizeStoredPeriodState(local, defaultHoursPerDay) : null;
       }
 
       const { data: entries, error: entriesError } = await supabase
@@ -172,14 +173,17 @@ export class SalaryStorageService {
         .eq('period_id', periodRow.id);
 
       if (entriesError || !entries) {
-        return local;
+        return local ? this.normalizeStoredPeriodState(local, defaultHoursPerDay) : null;
       }
 
-      const remote = this.mapPeriodEntries(entries, defaultHoursPerDay);
+      const remote = this.normalizeStoredPeriodState(
+        this.mapPeriodEntries(entries, defaultHoursPerDay),
+        defaultHoursPerDay,
+      );
       this.saveLocalPeriodState(employeeId, period, periodType, remote);
       return remote;
     } catch {
-      return local;
+      return local ? this.normalizeStoredPeriodState(local, defaultHoursPerDay) : null;
     }
   }
 
@@ -240,16 +244,15 @@ export class SalaryStorageService {
       await supabase.from('work_day_entries').delete().eq('period_id', periodRow.id);
       await supabase.from('work_day_entries').insert(entries);
 
-      await supabase.from('employee_settings').upsert(
-        {
-          employee_id: employeeId,
+      await supabase
+        .from('employee_settings')
+        .update({
           last_year: period.year,
           last_month: period.month,
           last_quincena: periodType === 'quincenal' ? period.quincena : null,
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'employee_id' },
-      );
+        })
+        .eq('employee_id', employeeId);
     } catch {
       // ignore
     }
@@ -313,6 +316,7 @@ export class SalaryStorageService {
       }
 
       return {
+        defaultHoursPerDay: parsed.defaultHoursPerDay,
         customHoursByDate: parsed.customHoursByDate ?? {},
         workDays: parsed.workDays,
       };
@@ -370,7 +374,44 @@ export class SalaryStorageService {
       };
     });
 
-    return { customHoursByDate, workDays: days };
+    return { defaultHoursPerDay, customHoursByDate, workDays: days };
+  }
+
+  private normalizeStoredPeriodState(
+    stored: StoredPeriodState,
+    currentDefaultHoursPerDay: number,
+  ): StoredPeriodState {
+    const savedDefault = stored.defaultHoursPerDay;
+
+    if (savedDefault !== undefined) {
+      const customHoursByDate: Record<string, number> = {};
+      for (const day of stored.workDays) {
+        if (day.date && day.hours !== savedDefault) {
+          customHoursByDate[day.date] = day.hours;
+        }
+      }
+
+      return { ...stored, customHoursByDate };
+    }
+
+    const realDays = stored.workDays.filter((day) => day.date);
+    const overrideKeys = Object.keys(stored.customHoursByDate);
+
+    if (
+      realDays.length > 0 &&
+      overrideKeys.length === realDays.length &&
+      realDays.every((day) => stored.customHoursByDate[day.date] === day.hours)
+    ) {
+      const uniqueHours = new Set(realDays.map((day) => day.hours));
+      if (uniqueHours.size === 1) {
+        const [onlyHours] = uniqueHours;
+        if (onlyHours !== currentDefaultHoursPerDay) {
+          return { ...stored, customHoursByDate: {} };
+        }
+      }
+    }
+
+    return stored;
   }
 
   private mapPeriodEntries(

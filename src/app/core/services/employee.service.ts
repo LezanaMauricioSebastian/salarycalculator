@@ -296,21 +296,23 @@ export class EmployeeService {
         return null;
       }
 
-      const { error: settingsError } = await supabase.from('employee_settings').upsert(
-        {
-          employee_id: data.id,
-          hourly_rate: DEFAULT_SETTINGS.hourlyRate,
-          default_hours_per_day: DEFAULT_SETTINGS.defaultHoursPerDay,
-          holiday_hourly_rate: DEFAULT_SETTINGS.holidayHourlyRate,
-          weekend_hourly_rate: DEFAULT_SETTINGS.weekendHourlyRate,
-          payment_period_type: DEFAULT_SETTINGS.paymentPeriodType,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'employee_id' },
-      );
+      if (mode === 'insert') {
+        const { error: settingsError } = await supabase.from('employee_settings').upsert(
+          {
+            employee_id: data.id,
+            hourly_rate: DEFAULT_SETTINGS.hourlyRate,
+            default_hours_per_day: DEFAULT_SETTINGS.defaultHoursPerDay,
+            holiday_hourly_rate: DEFAULT_SETTINGS.holidayHourlyRate,
+            weekend_hourly_rate: DEFAULT_SETTINGS.weekendHourlyRate,
+            payment_period_type: DEFAULT_SETTINGS.paymentPeriodType,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'employee_id' },
+        );
 
-      if (settingsError) {
-        console.error('Failed to save employee settings', settingsError.message);
+        if (settingsError) {
+          console.error('Failed to save employee settings', settingsError.message);
+        }
       }
 
       return this.mapEmployeeRow(data as EmployeeRow);

@@ -72,4 +72,33 @@ describe('SalaryStorageService', () => {
     expect(loaded?.workDays[0].selected).toBeTrue();
     expect(loaded?.workDays[1].selected).toBeFalse();
   });
+
+  it('clears false hour overrides when default hours changed after save', async () => {
+    const period = { year: 2025, month: 5, quincena: 'segunda' as const };
+    const workDays = [
+      { date: '2025-06-16', selected: true, hours: 8, isHoliday: false, isWeekend: false },
+      { date: '2025-06-17', selected: true, hours: 8, isHoliday: false, isWeekend: false },
+    ];
+
+    await service.savePeriodState(employeeId, period, 'quincenal', workDays, 8);
+
+    const loaded = await service.loadPeriodState(employeeId, period, 'quincenal', 9);
+
+    expect(loaded?.customHoursByDate).toEqual({});
+    expect(loaded?.defaultHoursPerDay).toBe(8);
+  });
+
+  it('keeps true per-day overrides when default hours changed after save', async () => {
+    const period = { year: 2025, month: 5, quincena: 'segunda' as const };
+    const workDays = [
+      { date: '2025-06-16', selected: true, hours: 9, isHoliday: false, isWeekend: false },
+      { date: '2025-06-17', selected: true, hours: 6, isHoliday: false, isWeekend: false },
+    ];
+
+    await service.savePeriodState(employeeId, period, 'quincenal', workDays, 9);
+
+    const loaded = await service.loadPeriodState(employeeId, period, 'quincenal', 9);
+
+    expect(loaded?.customHoursByDate).toEqual({ '2025-06-17': 6 });
+  });
 });
