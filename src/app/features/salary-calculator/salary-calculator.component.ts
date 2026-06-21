@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { getDay, parseISO } from 'date-fns';
@@ -24,6 +25,7 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
   selector: 'app-salary-calculator',
   imports: [
     MatToolbarModule,
+    MatIconModule,
     MatProgressSpinnerModule,
     EmployeeManagerComponent,
     SettingsPanelComponent,
@@ -33,7 +35,8 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
   ],
   template: `
     <mat-toolbar color="primary">
-      <span>Calculadora de sueldo</span>
+      <mat-icon class="app-logo" aria-hidden="true">calculate</mat-icon>
+      <span class="app-title">Calculadora de sueldo</span>
       @if (settingsService.syncEnabled()) {
         <span class="sync-badge sync-on">Sincronizado</span>
       } @else {
@@ -103,6 +106,17 @@ import { WorkDayCalendarComponent } from './work-day-calendar.component';
       gap: 1rem;
       min-height: 240px;
       color: rgba(0, 0, 0, 0.6);
+    }
+
+    .app-logo {
+      margin-right: 0.5rem;
+      font-size: 1.75rem;
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+
+    .app-title {
+      font-weight: 500;
     }
 
     .sync-badge {
