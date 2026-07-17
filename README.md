@@ -1,6 +1,7 @@
 # Calculadora de sueldo
 
 Aplicación Angular para calcular horas y sueldo del cuidado de un adulto mayor en Argentina.
+<img width="980" height="504" alt="image" src="https://github.com/user-attachments/assets/ba33fe82-dcd0-4138-97d4-8b3eaf0219f0" />
 
 ## Funciones
 
